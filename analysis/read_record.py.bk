@@ -1,0 +1,138 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
+matplotlib.rcParams.update({'font.size': 12, 'font.weight' : 'bold'})
+
+directory = "../s053_r3kb8_LB50_ref6"
+# directory = "/lfs/data/xianhsu/gamer/bin/weinberger/s026_r165_ref4"
+textfile_name = directory + "/Record__Conservation"
+output = 'evolution_plot' + directory[2:8] + 'record.png' 
+# output = 'evolution_plot/' + 'past_record_gas.png'
+legend = ['kinetic', 'thermal', 'gravitational', 'magnetic', 
+          'total', 'magnetic injection', 'total injection']
+# legend = ['kinetic', 'thermal', 'gravitational', 'magnetic', 
+#           'total']
+# legend = ['kinetic (neg for par)', 'thermal', 'gravitational', 
+#           'total', 'total injection']
+f_b = 0.01
+jet_power = 5e45
+jet_duration = 25
+MYR = 86400 * 365.25 * 1e6
+UNIT_L = 3.08567758149e24
+UNIT_M = 1.9885e47
+UNIT_T = 7.8892313e15
+UNIT_E = UNIT_M * UNIT_L**2 / UNIT_T**2
+# print(UNIT_E)
+
+with open(textfile_name) as textFile:
+    lines = [line.split() for line in textFile]
+data          = np.array(lines[27:], dtype = float)
+
+# total energy     => 66
+# kinetic energy   => 15 + 45 (hy+par)
+# thermal energy   => 18
+# potential energy => 21 + 48 (hy+par)
+# magnetic energy  => 24
+
+time = np.array(data[:, 0]) * UNIT_T / MYR
+ekin_gas = (np.array(data[:,14]) - np.array(data[0,14])) * UNIT_E
+ekin_par = (np.array(data[:,44]) - np.array(data[0,44])) * UNIT_E
+ethe_gas = (np.array(data[:,17]) - np.array(data[0,17])) * UNIT_E
+epot_gas = (np.array(data[:,20]) - np.array(data[0,20])) * UNIT_E
+epot_par = (np.array(data[:,47]) - np.array(data[0,47])) * UNIT_E
+emag_gas = (np.array(data[:,23]) - np.array(data[0,23])) * UNIT_E
+etot_gas = (np.array(data[:,26]) - np.array(data[0,26])) * UNIT_E
+etot_par = (np.array(data[:,50]) - np.array(data[0,50])) * UNIT_E
+etot_all = (np.array(data[:,65]) - np.array(data[0,65])) * UNIT_E
+legend = ['kinetic gas', 'kinetic par', 'thermal gas', 
+          'gravitational gas', 'gravitational par', 'magnetic gas', 
+          'total gas', 'total par', 'total all']
+plot_vars = [ekin_gas, ekin_par, ethe_gas, 
+             epot_gas, epot_par, emag_gas, 
+             etot_gas, etot_par, etot_all]
+
+# time = np.array(data[:, 0]) * UNIT_T / MYR
+# ekin = (np.array(data[:,14]) + np.array(data[:,44]) - np.array(data[0,14]) - np.array(data[0,44])) * UNIT_E
+# epot = -(np.array(data[:,20]) + np.array(data[:,47]) - np.array(data[0,20]) - np.array(data[0,47])) * UNIT_E
+# etot = -(np.array(data[:,65]) - np.array(data[0,65])) * UNIT_E
+# # ekin = (np.array(data[:,14]) - np.array(data[0,14])) * UNIT_E
+# # epot = (np.array(data[:,20]) - np.array(data[0,20])) * UNIT_E
+# # etot = (np.array(data[:,26]) - np.array(data[0,26])) * UNIT_E
+# ethe = (np.array(data[:,17]) - np.array(data[0,17])) * UNIT_E
+# emag = (np.array(data[:,23]) - np.array(data[0,23])) * UNIT_E
+
+# ekin = -(np.array(data[:,14]) + np.array(data[:,41]) - np.array(data[0,14]) - np.array(data[0,41])) * UNIT_E
+# epot = (np.array(data[:,20]) + np.array(data[:,44]) - np.array(data[0,20]) - np.array(data[0,44])) * UNIT_E
+# ekin = (np.array(data[:,14]) - np.array(data[0,14])) * UNIT_E
+# epot = (np.array(data[:,20]) - np.array(data[0,20])) * UNIT_E
+# etot = (np.array(data[:,23]) - np.array(data[0,23])) * UNIT_E
+# ethe = (np.array(data[:,17]) - np.array(data[0,17])) * UNIT_E
+# print(ekin)
+fig = plt.figure()
+ax = fig.add_subplot(111)
+for e in plot_vars:
+# for e in [ekin, ethe, epot, etot]:
+    ax.semilogy(time, e)
+inj_tot = np.array([jet_power*min(jet_duration,time[i])*MYR for i in range(len(data[:,0]))])
+inj_mag = f_b * inj_tot
+# ax.plot(data[:,0], inj_mag, '--')
+# ax.plot(data[:,0], inj_tot, '--')
+# ax.semilogy(time, inj_mag, '--')
+# ax.semilogy(time, inj_tot, '--')
+lg = ax.legend(legend, loc='lower right')
+lg.get_frame().set_alpha(0.5)
+ax.set_xlabel('time (Myr)')
+ax.set_ylabel(r'$E(t)-E(t_0)$ (erg)')
+ax.set_xlim(0, 250)
+# ax.set_ylim(1e56, 1e62)
+# ax.set_ylim(1e56, 1e63)
+ax.grid()
+ax.set_title('simulation box energy evolution with particle')
+fig.savefig(output)
+
+del fig, ax
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+bin_number = len(time)
+negative_ekin_gas = np.zeros(bin_number)
+negative_ekin_par = np.zeros(bin_number)
+negative_ethe_gas = np.zeros(bin_number)
+negative_epot_gas = np.zeros(bin_number)
+negative_epot_par = np.zeros(bin_number)
+negative_emag_gas = np.zeros(bin_number)
+negative_etot_gas = np.zeros(bin_number)
+negative_etot_par = np.zeros(bin_number)
+negative_etot_all = np.zeros(bin_number)
+negative_plot = [negative_ekin_gas, negative_ekin_par, negative_ethe_gas, 
+                 negative_epot_gas, negative_epot_par, negative_emag_gas, 
+                 negative_etot_gas, negative_etot_par, negative_etot_all]
+for i in range(bin_number):
+    for j in range(len(plot_vars)):
+        if plot_vars[j][i] < 0 :
+            negative_plot[j][i] = -plot_vars[j][i]
+
+for e in negative_plot:
+# for e in [ekin, ethe, epot, etot]:
+    ax.semilogy(time, e)
+inj_tot = np.array([jet_power*min(jet_duration,time[i])*MYR for i in range(len(data[:,0]))])
+inj_mag = f_b * inj_tot
+# ax.plot(data[:,0], inj_mag, '--')
+# ax.plot(data[:,0], inj_tot, '--')
+# ax.semilogy(time, inj_mag, '--')
+# ax.semilogy(time, inj_tot, '--')
+lg = ax.legend(legend, loc='lower right')
+lg.get_frame().set_alpha(0.5)
+ax.set_xlabel('time (Myr)')
+ax.set_ylabel(r'$E(t)-E(t_0)$ (erg)')
+ax.set_xlim(0, 250)
+# ax.set_ylim(1e56, 1e61)
+# ax.set_ylim(1e56, 1e62)
+# ax.set_ylim(1e56, 1e63)
+ax.grid()
+ax.set_title('simulation box energy evolution with particle (negative part)')
+# output = 'evolution_plot/' + 's021_record_negative.png'
+output = 'evolution_plot' + directory[2:8] + 'record_negative.png' 
+fig.savefig(output)
