@@ -5,11 +5,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from mpi4py import MPI
-# mpiexec -n 50 python hardcastle14_lobe_property.py
+# mpiexec -n 45 python hardcastle14_lobe_property.py
 
-dir_name = ["s057_t250_r3kb8_LB50_ref7_0.0"]
+dir_name = ["s057_t250_r3kb8_LB50_ref7_0.0", 
+            "s056_t250_r3kb8_LB50_2A05_ref7_0.001",
+            "s055_t250_r3kb8_LB50_2A05_ref7_0.01"]
 start_ID = int(1)
-max_ID = int(60)
+max_ID = int(50)
 interval = int(1)
 number = int((max_ID-start_ID)/interval+1)
 time = np.zeros(number)
@@ -55,20 +57,29 @@ if rank==0:
     fig = plt.figure(figsize=(6,12))
     ax1 = fig.add_subplot(311)
     ax1.set_title('lobe property')
-    ax1.loglog(recv_tim,recv_len[0])
+    # ax1.loglog(recv_tim,recv_len[0])
+    for i in range(len(dir_name)):
+        ax1.loglog(recv_tim,recv_len[i])
     ax1.set_xlim(1, 250)
     ax1.set_ylim(1, 400)
     ax1.set_ylabel('lobe length (kpc)')
     
     ax2 = fig.add_subplot(312)
-    ax2.loglog(recv_tim, recv_vol[0])
+    # ax2.loglog(recv_tim, recv_vol[0])
+    for i in range(len(dir_name)):
+        ax2.loglog(recv_tim, recv_vol[i])
     ax2.set_xlim(1, 250)
     ax2.set_ylabel(r'volume ($kpc^3$)')
     
     ax3 = fig.add_subplot(313)
-    ax3.loglog(recv_tim, recv_vol[0]/recv_len[0]**3)
+    # ax3.loglog(recv_tim, recv_vol[0]/recv_len[0]**3)
+    for i in range(len(dir_name)):
+        ax3.loglog(recv_tim, recv_vol[i]/recv_len[i]**3)
     ax3.set_xlim(1, 250)
     ax3.set_xlabel('time (Myr)')
     ax3.set_ylabel(r'$volume/length^3$')
     
-    fig.savefig("hardcastle14_plots/lobe_property_test.png")
+    for ax in [ax1, ax2, ax3]:
+        ax.legend([r'$f_B=0$', r'$f_B=0.001$', r'$f_B=0.01$'])
+    
+    fig.savefig("hardcastle14_plots/lobe_property_s057.png")

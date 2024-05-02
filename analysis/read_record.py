@@ -6,7 +6,7 @@ matplotlib.rcParams['mathtext.fontset'] = 'stix'
 matplotlib.rcParams['font.family'] = 'STIXGeneral'
 matplotlib.rcParams.update({'font.size': 12, 'font.weight' : 'bold'})
 
-directory = "../s055_t250_r3kb8_LB50_2A05_ref7_0.01"
+directory = "../s057_t250_r3kb8_LB50_ref7_0.0"
 textfile_name = directory + "/Record__Conservation"
 base_directory = "../s051_r3kb8_LB50_ref7"
 base_textfile_name = base_directory + "/Record__Conservation"
@@ -29,14 +29,14 @@ UNIT_E = UNIT_M * UNIT_L**2 / UNIT_T**2
 # print(UNIT_E)
 bin_number = int(101)
 # plot variables
-xmin, xmax = 0, 250
+xmin, xmax = 0, 150
 ymin, ymax = 1e56, 1e63
 
 # note! (simulation Record__Conservation with mhd)
-# total energy     => 27 + 51 = 66 (hy+par=all)
-# kinetic energy   => 15 + 45 (hy+par)
+# total energy     => 27 + 51 = 66 (hydro+par=all)
+# kinetic energy   => 15 + 45 (hydro+par)
 # thermal energy   => 18
-# potential energy => 21 + 48 (hy+par)
+# potential energy => 21 + 48 (hydro+par)
 # magnetic energy  => 24
 
 with open(textfile_name) as textFile:

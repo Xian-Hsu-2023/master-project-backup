@@ -7,9 +7,9 @@ import numpy as np
 from mpi4py import MPI
 # mpiexec -n 45 python hardcastle14_energy.py
 
-dir_name = ["s057_t250_r3kb8_LB50_ref7_0.0"]
+dir_name = ["s056_t250_r3kb8_LB50_2A05_ref7_0.001"]
 start_ID = int(1)
-max_ID = int(60)
+max_ID = int(50)
 interval = int(1)
 number = int((max_ID-start_ID)/interval+1)
 time = np.zeros(number)
@@ -178,4 +178,4 @@ if rank==0:
     ax2.legend(framealpha=0.4)
     ax2.set_xlabel('Time (Myr)')
     ax2.set_ylabel('Lobe magnetic energy (erg)')
-    fig.savefig("hardcastle14_plots/energy_test.png")
+    fig.savefig("hardcastle14_plots/energy_s056.png")

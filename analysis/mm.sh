@@ -1,5 +1,5 @@
 #!/bin/bash
-export TEST="magtest054"
+export TEST="magtest057"
 
 mkdir animation/${TEST}
 export DIR="figure/${TEST}_*/"

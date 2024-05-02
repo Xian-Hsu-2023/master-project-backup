@@ -7,9 +7,11 @@ import numpy as np
 from mpi4py import MPI
 # mpiexec -n 45 python hardcastle14_bcomponents.py
 
-dir_name = ["s057_t250_r3kb8_LB50_ref7_0.0"]
+dir_name = ["s057_t250_r3kb8_LB50_ref7_0.0", 
+            "s056_t250_r3kb8_LB50_2A05_ref7_0.001",
+            "s055_t250_r3kb8_LB50_2A05_ref7_0.01"]
 start_ID = int(1)
-max_ID = int(90)
+max_ID = int(50)
 interval = int(1)
 number = int((max_ID-start_ID)/interval+1)
 
@@ -98,26 +100,53 @@ comm.Reduce(frac_rad, recv_frac_rad)
 comm.Reduce(time, recv_tim)
 
 if rank==0:
-    print(recv_tim)
-    print(recv_len)
-    print(recv_frac_tor)
-    print(recv_frac_lon)
-    print(recv_frac_rad)
-    fig = plt.figure()
-    ax0 = fig.add_subplot(121)
-    # for i in range(len(dir_name)):
-    #     ax.plot(recv_tim,recv_len[i], alpha=0.5)
-    ax0.plot(recv_tim,recv_len[0])
+    # print(recv_tim)
+    # print(recv_len)
+    # print(recv_frac_tor)
+    # print(recv_frac_lon)
+    # print(recv_frac_rad)
+    fig = plt.figure(figsize=(1+6*4, 6))
+    ax0 = fig.add_subplot(141)
+    for i in range(len(dir_name)):
+        ax0.plot(recv_tim,recv_len[i])
+    # ax0.plot(recv_tim,recv_len[0])
     ax0.set_xlim(1, 250)
     ax0.set_ylim(1, 400)
     ax0.set_xlabel('time (Myr)')
-    ax0.set_ylabel('jet length (kpc)')
-    ax1 = fig.add_subplot(122)
-    ax1.plot(recv_len[0], recv_frac_tor[0], label='toroidal')
-    ax1.plot(recv_len[0], recv_frac_lon[0], label='longitudinal')
-    ax1.plot(recv_len[0], recv_frac_rad[0], label='radial')
-    ax1.set_xlabel(r'jet length (kpc)')
+    ax0.set_ylabel('lobe length (kpc)')
+    ax0.set_title('lobe length evolution')
+    
+    ax1 = fig.add_subplot(142)
+    for i in range(len(dir_name)):
+        ax1.plot(recv_len[i], recv_frac_tor[i], label='toroidal')
+    ax1.set_xlim(0, 400)
+    ax1.set_ylim(0, 1)
+    ax1.set_xlabel(r'lobe length (kpc)')
     ax1.set_ylabel(r'$\frac{E_{B_{comp}}}{E_B}$')
-    ax1.legend()
-    fig.savefig("hardcastle14_plots/bcomp_test.png")
+    ax1.set_title('toroidal')
+    
+    ax2 = fig.add_subplot(143)
+    for i in range(len(dir_name)):
+        ax2.plot(recv_len[i], recv_frac_lon[i], label='longitudinal')
+    ax2.set_xlim(0, 400)
+    ax2.set_ylim(0, 1)
+    ax2.set_xlabel(r'lobe length (kpc)')
+    ax2.set_title('longitudinal')
+    
+    ax3 = fig.add_subplot(144)
+    for i in range(len(dir_name)):
+        ax3.plot(recv_len[i], recv_frac_rad[i], label='radial')
+    ax3.set_xlim(0, 400)
+    ax3.set_ylim(0, 1)
+    ax3.set_xlabel(r'lobe length (kpc)')
+    ax3.set_title('radial')
+    
+    for ax in [ax0, ax1, ax2, ax3]:
+        ax.legend([r'$f_B=0$', r'$f_B=0.001$', r'$f_B=0.01$'])
+    
+    # for i in range(len(dir_name)):
+    #     ax1.plot(recv_len[0], recv_frac_lon[0], label='longitudinal')
+    # for i in range(len(dir_name)):
+    #     ax1.plot(recv_len[0], recv_frac_rad[0], label='radial')
+    fig.savefig("hardcastle14_plots/bcomp_s057.png")
 
