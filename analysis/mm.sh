@@ -1,4 +1,6 @@
 #!/bin/bash
+# make short animations for the plot produced by mpi_pythonplot.sh
+# please modify the path for your own purpose
 export TEST="magtest057"
 
 mkdir animation/${TEST}

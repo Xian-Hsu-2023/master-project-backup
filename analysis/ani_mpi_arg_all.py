@@ -1,23 +1,31 @@
+"""
+ani_mpi_arg_all.py: plot sliceplot of any field with MPI acceleration, you only need to modify simple arguments
+author: Xian Hsu
+usage: modify the "file_directory" and "titles" for your simulation directory, then run mpi_pythonplot.sh
+       if you want to define field or do with ProjectionPlot or ParticlePlot, please modify this program
+first usage: please check the path in "file_name" (there may be few errors at first usage)
+"""
 import yt
 from yt.utilities.physical_constants import kb
 from yt import YTQuantity
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import ImageGrid
-from matplotlib.colors import LogNorm
 import os
 import sys
 import argparse
 from mpi4py import MPI
 
-# file_directory = ['s042_regular_r3000b8_ambLB50_ref7_0.1', 's041_regular_r3000b8_ambLB100_ref7_0.1', 's039_regular_r3000b8_amb_ref7_0.1']
+# the name of your simulation directory
 file_directory = ['s057_t250_r3kb8_LB50_ref7_0.0', 's056_t250_r3kb8_LB50_2A05_ref7_0.001', 's055_t250_r3kb8_LB50_2A05_ref7_0.01']
+# the title for each plot (corresponding to di)
 titles = [r"$f_B=0$", r"$f_B=0.001$", r"$f_B=0.01$"]
-# titles = [r"L_B_{MAX}=50kpc", r"L_B_{MAX}=100kpc", r"L_B_{MAX}=500kpc"]
 
+# setup for a MPI program
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
 rank = comm.Get_rank()
 
+# the arguments the are used on the command line
 parser = argparse.ArgumentParser(description='Plot the cooling time with given plot file numbers, file name, region, and direction.')
 parser.add_argument('-n', '--number' , nargs=1, type=int, help="number of the output files", default=[1])
 parser.add_argument('-f', '--filename', nargs=1, help='the name of your output files', default=['Data_'])
@@ -31,11 +39,13 @@ file_name_type = args.filename[0]
 region = args.region[0]
 direction = args.direction[0]
 variable = args.variable[0]
-# directory = args.directory
+# where the output plots are saved
 directory = 'figure/magtest' + file_directory[0][1:4] + '_' + variable + '_' + direction + '_range' + str(region)
 command = 'mkdir ' + directory
 if rank==0:
     os.system(command)
+# set variable = "lobe_variable" or "shock_variable" would let this program cut the lobe or shock region
+# (you may redifine the following lobe/shock criteria)
 arg = None
 if variable[0:4]=='lobe':
     variable = variable[5:]
@@ -45,11 +55,8 @@ elif variable[0:5]=='shock':
     arg = 'shock'
 # else:
 #     print('Hello from rank %.f2' %rank, flush=True)
-    
-count = [None]*1000
-for i in range(1000):
-    count[i] = str(i).zfill(6)
 
+# define your own fields
 def _tCool(field, data): 
     mu = 0.61 # assuming fully ionized gas 
     mue = 1.18 
@@ -93,6 +100,7 @@ def _hardcastle14_radial_mach_number(field, data):
 yt.add_field(("gas", "hardcastle14_radial_mach_number"), function=_hardcastle14_radial_mach_number, sampling_type="local", units="")
 
 for i in range(num):
+    # allocate the independent jobs to each core
     if (i % size == rank):
         figx = 6 * len(file_directory)
         plt.rcParams.update({'figure.figsize': [figx, 6.]})
@@ -113,9 +121,10 @@ for i in range(num):
         )
         
         for j in range(len(file_directory)):
-            file_name = '../'+file_directory[j]+'/'+file_name_type+count[i]
-            #ds = yt.load('../crbub_hdf5_plt_cnt_'+count[i])
+            # the path to the simulation file (you may modify this for first usage)
+            file_name = '../'+file_directory[j]+'/'+file_name_type+str(i).zfill(6)
             ds = yt.load(file_name)
+            # make exception if you don't want to simply have a sliceplot
             if variable=='faraday_rotation_x' or variable=='faraday_rotation_y' or variable=='faraday_rotation_z':
                 p = yt.ProjectionPlot(ds, direction, variable, width=(region, 'kpc'))
                 p.set_zlim(variable, -1e5, 1e5)
@@ -133,6 +142,8 @@ for i in range(num):
                 p = yt.SlicePlot(ds, direction, variable, width=(region, "kpc"), data_source=shock)
             else:
                 p = yt.SlicePlot(ds, direction, variable, width=(region, "kpc"))
+            
+            # set upper/lower limit for different variables
             if variable=='density':
                 p.set_zlim(("gas", variable), 1e-27,2e-25)
             elif variable=='kinetic_energy_density':
@@ -152,6 +163,7 @@ for i in range(num):
                 p.set_zlim((variable), 1e-6, 5e2)
                 # p.annotate_grids()
             
+            # if your field doesn't have the form ("gas", variable), you may need to make an exception here
             if variable=='particle_mass':
                 plot = p.plots[('io', variable)]
             else:
@@ -162,13 +174,14 @@ for i in range(num):
             grid[j].axes.set_title(titles[j])
             # plots[j].set_cmap("gnuplot")
             # plots[j].annotate_grids()
-            
+        
+        # annotate the simulation time at the corner of the figure
         textx = 0.2
         texty = 0.925
         grid[0].axes.text(textx, texty, 'time = %.2f Myr' %ds.current_time.in_units('Myr'), horizontalalignment='center', 
                           color="black", bbox=dict(facecolor='white', alpha=0.5), verticalalignment='center', transform=grid[0].axes.transAxes)
         try:
-            fig.savefig(directory+'/'+count[i]+'.png')
+            fig.savefig(directory+'/'+str(i).zfill(6)+'.png')
         except:
             print("error happens when saving file... QQ")
         plt.close(fig)
