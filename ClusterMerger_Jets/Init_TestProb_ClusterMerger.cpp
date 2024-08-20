@@ -169,6 +169,8 @@ extern double (*MHD_ResetByUser_BField_Ptr)( const double x, const double y, con
                                              const int i, const int j, const int k );
 #endif
 
+void Init_ExtAcc_NFW();
+
 //extern void GetClusterCenter( int lv, double Cen_old[][3], double Cen_new[][3], double Cen_Vel[][3] ); 
 
 //-------------------------------------------------------------------------------------------------------
@@ -340,7 +342,9 @@ void SetParameter()
 
 // convert to code units
    Merger_Coll_PosX1 *= Const_kpc / UNIT_L;
+   Merger_Coll_PosX1 += amr->BoxCenter[0]; // add by xianhsu 240820 (TODO: add to note)
    Merger_Coll_PosY1 *= Const_kpc / UNIT_L;
+   Merger_Coll_PosY1 += amr->BoxCenter[1];
    Merger_Coll_PosX2 *= Const_kpc / UNIT_L;
    Merger_Coll_PosY2 *= Const_kpc / UNIT_L;
    Merger_Coll_PosX3 *= Const_kpc / UNIT_L;
@@ -919,6 +923,10 @@ void Init_TestProb_Hydro_ClusterMerger()
    // MHD_ResetByUser_VecPot_Ptr     = NULL;
    MHD_ResetByUser_VecPot_Ptr     = (ClusterMerger_ResetB_VecPot) ? MHD_ResetByUser_VecPot_ClusterMerger : NULL;
 #  endif
+// added by xianhsu for external acceleration
+# ifdef GRAVITY
+  Init_ExtAcc_Ptr = Init_ExtAcc_NFW;
+# endif
 #  endif // if ( MODEL == HYDRO  &&  defined MASSIVE_PARTICLES )
 
    if ( MPI_Rank == 0 )    Aux_Message( stdout, "%s ... done\n", __FUNCTION__ );
