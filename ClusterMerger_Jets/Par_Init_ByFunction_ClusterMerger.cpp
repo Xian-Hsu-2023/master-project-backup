@@ -947,9 +947,12 @@ void GetClusterCenter( int lv, bool AdjustPos, bool AdjustVel, double Cen_old[][
       }
       // forced center parameter to be fixed (XianHsu 20230829)
       if (c==0){
-         Cen_Tmp[0] = 4.0;
-         Cen_Tmp[1] = 4.0;
-         Cen_Tmp[2] = 4.0;
+         // Cen_Tmp[0] = 4.0;
+         // Cen_Tmp[1] = 4.0;
+         // Cen_Tmp[2] = 4.0;
+         Cen_Tmp[0] = Cen_old[c][0];
+         Cen_Tmp[1] = Cen_old[c][1];
+         Cen_Tmp[2] = Cen_old[c][2];
          Vel_Tmp[0] = 0.0;
          Vel_Tmp[1] = 0.0;
          Vel_Tmp[2] = 0.0;

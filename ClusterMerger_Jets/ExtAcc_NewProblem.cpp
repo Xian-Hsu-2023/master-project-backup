@@ -67,7 +67,7 @@ void SetExtAccAuxArray_NFW( double AuxArray[], const double Time )
    const double coef= 1.0; // a ratio between total mass by integration and by analytical function (not used, finally)
    const double M   = 8.5E14 * Const_Msun / UNIT_M * coef; // 1.9885e47 as UNIT_M
    const double GM  = NEWTON_G*M;
-   const double Eps = 0.0;
+   const double Eps = 1.0E-5; // soften factor
 
    const double r200     = 1.9355819525244697 * Const_Mpc / UNIT_L; // in unit Mpc
    const double c        = 6.81;
@@ -131,16 +131,11 @@ static void ExtAcc_NFW( real Acc[], const double x, const double y, const double
    const real c        = (real)UserArray[6];
    const real a        = (real)UserArray[7];
    const real mp       = (real)UserArray[8];
-   // const real r200     = 2.440; // in unit Mpc
-   // const real r200     = 1.9355819525244697; // in unit Mpc
-   // const real c        = 6.81;
-   // const real rs       = r200 / c; // in unit Mpc
-   // const real a        = 1.5*rs;
-   // const real mp       = 1 - (1-(2+3*c)/2/POW(1+c, (real)1.5)); // ratio between M200 and M_total
 
 // Plummer
 #  if   ( defined SOFTEN_PLUMMER )
    const real _r3 = ( eps <= (real)0.0 ) ? (real)1.0/CUBE(r) : POW( SQR(r)+SQR(eps), (real)-1.5 );
+   const real sr  = ( eps <= (real)0.0 ) ? r : SQRT( SQR(r)+SQR(eps) );
 
 // Ruffert 1994
 #  elif ( defined SOFTEN_RUFFERT )
@@ -156,9 +151,9 @@ static void ExtAcc_NFW( real Acc[], const double x, const double y, const double
    // Acc[1] = -GM/r*dy * (1/POW(r,2) - POW(a,0.5)/POW(r,2)/POW(a+r,0.5) - POW(a,0.5)/2/r/POW(a+r,1.5)) / mp;
    // Acc[2] = -GM/r*dz * (1/POW(r,2) - POW(a,0.5)/POW(r,2)/POW(a+r,0.5) - POW(a,0.5)/2/r/POW(a+r,1.5)) / mp;
    // This coefficient follows the mass profile in cluster generator (sNFW version)
-   Acc[0] = -GM/mp*_r3*dx * ((real)1 - ((real)2+(real)3*r/rs)/(real)2/POW((real)1+r/rs, (real)1.5));
-   Acc[1] = -GM/mp*_r3*dy * ((real)1 - ((real)2+(real)3*r/rs)/(real)2/POW((real)1+r/rs, (real)1.5));
-   Acc[2] = -GM/mp*_r3*dz * ((real)1 - ((real)2+(real)3*r/rs)/(real)2/POW((real)1+r/rs, (real)1.5));
+   Acc[0] = -GM/mp*_r3*dx * ((real)1 - ((real)2+(real)3*sr/rs)/(real)2/POW((real)1+sr/rs, (real)1.5));
+   Acc[1] = -GM/mp*_r3*dy * ((real)1 - ((real)2+(real)3*sr/rs)/(real)2/POW((real)1+sr/rs, (real)1.5));
+   Acc[2] = -GM/mp*_r3*dz * ((real)1 - ((real)2+(real)3*sr/rs)/(real)2/POW((real)1+sr/rs, (real)1.5));
    // This coefficient follows the mass profile (NFW version)
    // Acc[0] = GM*_r3*dx / (log(1+c)-c/(1+c)) * (r/(r+rs)-log(1+r/rs));
    // Acc[1] = GM*_r3*dy / (log(1+c)-c/(1+c)) * (r/(r+rs)-log(1+r/rs));

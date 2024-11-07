@@ -67,6 +67,7 @@ static int     Merger_NBin3;              // number of radial bins of cluster 3
 static FieldIdx_t ColorField1Idx = Idx_Undefined;
 static FieldIdx_t ColorField2Idx = Idx_Undefined;
 static FieldIdx_t ColorField3Idx = Idx_Undefined;
+FieldIdx_t TracerIdx = Idx_Undefined;
 
        double eta;                  // mass loading factor in jet feedback
        double eps_f;                // the radiative efficiency in jet feedback
@@ -82,6 +83,7 @@ static FieldIdx_t ColorField3Idx = Idx_Undefined;
        int    JetBModel;            // jets B field model (0 for toroidal)
        double JetBModel1_AFactor;   // when jets B field model==1, assume constant current inside r = A * Rj
        double JetBModel2_BFactor;   // when jets B field model==2, modify the B field inside r = B * Rj (while not using model 2, keep at 1.0!)
+       bool   Tracer;               // whether to use passive tracer
 
        double CM_Bondi_SinkMass[3];       // total mass change            in the feedback region in one global time-step
        double CM_Bondi_SinkMomX[3];       // total x-momentum change      ...
@@ -330,21 +332,22 @@ void SetParameter()
    ReadPara->Add( "JetBModel",             &JetBModel,                0,               0,             2              );
    ReadPara->Add( "JetBModel1_AFactor",    &JetBModel1_AFactor,       1.0,             0.001,         1.0            );
    ReadPara->Add( "JetBModel2_BFactor",    &JetBModel2_BFactor,       1.0,             1.0,           100.0          );
+   ReadPara->Add( "Tracer",                &Tracer,                 false,             Useless_bool,  Useless_bool   );
 
    ReadPara->Read( FileName );
 
    delete ReadPara;
 
-// Validate that we have the correct number of passive scalars
-   if ( Merger_Coll_NumHalos + (int)Merger_Coll_UseMetals != NCOMP_PASSIVE_USER )
+// Validate that we have the correct number of passive scalars (modified with +1 for tracer by xianhsu at 20241105)
+   if ( Merger_Coll_NumHalos + (int)Merger_Coll_UseMetals + 1 != NCOMP_PASSIVE_USER )
       Aux_Error( ERROR_INFO,
-                 "please set NCOMP_PASSIVE_USER (currently %d) == Merger_Coll_NumHalos + Merger_Coll_UseMetals (currently %d) in the Makefile !!\n", NCOMP_PASSIVE_USER, Merger_Coll_NumHalos + (int)Merger_Coll_UseMetals );
+                 "please set NCOMP_PASSIVE_USER (currently %d) == Merger_Coll_NumHalos + Merger_Coll_UseMetals (currently %d) + 1 (Tracer) in the Makefile !!\n", NCOMP_PASSIVE_USER, Merger_Coll_NumHalos + (int)Merger_Coll_UseMetals );
 
 // convert to code units
    Merger_Coll_PosX1 *= Const_kpc / UNIT_L;
-   Merger_Coll_PosX1 += amr->BoxCenter[0]; // add by xianhsu 240820 (TODO: add to note)
+   // Merger_Coll_PosX1 += amr->BoxCenter[0]; // add by xianhsu 240820 (give position offset to box center, uncomment if needed)
    Merger_Coll_PosY1 *= Const_kpc / UNIT_L;
-   Merger_Coll_PosY1 += amr->BoxCenter[1];
+   // Merger_Coll_PosY1 += amr->BoxCenter[1];
    Merger_Coll_PosX2 *= Const_kpc / UNIT_L;
    Merger_Coll_PosY2 *= Const_kpc / UNIT_L;
    Merger_Coll_PosX3 *= Const_kpc / UNIT_L;
@@ -827,6 +830,8 @@ void SetGridIC( real fluid[], const double x, const double y, const double z, co
          fluid[ColorField3Idx] = 0.0;
    }
 
+   fluid[TracerIdx] = 0.0;
+
 } // FUNCTION : SetGridIC
 
 #endif // #if ( MODEL == HYDRO  &&  defined MASSIVE_PARTICLES )
@@ -1013,6 +1018,9 @@ void AddNewField_ClusterMerger()
       ColorField2Idx = AddField( "ColorField2", NORMALIZE_NO, INTERP_FRAC_NO );
    if ( Merger_Coll_NumHalos > 2 && ColorField3Idx == Idx_Undefined )
       ColorField3Idx = AddField( "ColorField3", NORMALIZE_NO, INTERP_FRAC_NO );
+   // tracer add by XianHsu at 20241030 (under testing)
+   if ( TracerIdx == Idx_Undefined )
+      TracerIdx = AddField( "Jet_Fraction", NORMALIZE_NO, INTERP_FRAC_NO);
 
 }
 

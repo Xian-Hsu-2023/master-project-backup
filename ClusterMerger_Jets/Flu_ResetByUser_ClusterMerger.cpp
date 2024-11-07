@@ -13,6 +13,8 @@ extern double JetBModel1_AFactor;      // when jets B field model==1, assume con
 extern double JetBModel2_BFactor;      // when jets B field model==2, modify the B field inside r = B * Rj (while not using model 2, keep at 1.0!)
 extern bool   Single_Injection;        // (1 / 0) for (single injection / self-regulated)
        double EB, B0;                  // magnetic energy, injected magnetic field factor
+extern bool   Tracer;
+extern FieldIdx_t TracerIdx;
 
 extern double CM_Bondi_SinkMass[3];
 extern double CM_Bondi_SinkMomX[3];
@@ -226,6 +228,10 @@ int Flu_ResetByUser_Func_ClusterMerger( real fluid[], const double Emag, const d
       fluid[MOMX] = P_new*Jet_Vec[status-1][0];
       fluid[MOMY] = P_new*Jet_Vec[status-1][1];
       fluid[MOMZ] = P_new*Jet_Vec[status-1][2];
+
+      if ( Tracer ) {
+         fluid[TracerIdx] = 1.0;
+      }
 
 //    Transfer back into the rest frame  
       // fluid[MOMX] += BH_Vel[status-1][0]*fluid[DENS];
@@ -480,9 +486,9 @@ void Flu_ResetByUser_API_ClusterMerger( const int lv, const int FluSg, const int
 //      double phi   = Mis_InterpolateFromTable( JetDirection_NBin, Time_table, Phi_table[c], Time_interpolate );
 //      double theta = 10.0*M_PI/180.0;
 //      double phi = 2*M_PI*Time_interpolate/Time_period;
-      Jet_Vec[c][0] = 1.0;   //cos(theta);   //sin(theta)*cos(phi);
+      Jet_Vec[c][0] = 0.0;   //cos(theta);   //sin(theta)*cos(phi);
       Jet_Vec[c][1] = 0.0;   //sin(theta)*cos(phi);   //sin(theta)*sin(phi);
-      Jet_Vec[c][2] = 0.0;   //sin(theta)*sin(phi);   //cos(theta);
+      Jet_Vec[c][2] = 1.0;   //sin(theta)*sin(phi);   //cos(theta);
    }
 
    // const double dh       = amr->dh[lv];
@@ -543,6 +549,17 @@ void Flu_ResetByUser_API_ClusterMerger( const int lv, const int FluSg, const int
 //          calculate the average density, sound speed and gas velocity inside accretion radius
             if (SQR(x2-ClusterCen[c][0])+SQR(y2-ClusterCen[c][1])+SQR(z2-ClusterCen[c][2]) <= SQR(R_acc)){
                rho += fluid_Bondi[0]*dv;
+               // pull dual energy from latest version (xianhsu 20241002: need modification, now unavailable)
+// #              ifdef DUAL_ENERGY 
+//                double pres = Hydro_DensDual2Pres( fluid_Bondi[0], fluid_Bondi[DUAL], EoS_AuxArray_Flt[1], false, NULL_REAL );
+//                double eint = EoS_DensPres2Eint_CPUPtr( fluid_Bondi[0], pres, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+//                double Temp = EoS_DensEint2Temp_CPUPtr( fluid_Bondi[0], eint, NULL, EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+// #              else
+//                double Temp = (real) Hydro_Con2Temp( fluid_Bondi[0], fluid_Bondi[1], fluid_Bondi[2], fluid_Bondi[3], fluid_Bondi[4],
+//                                                     fluid_Bondi+NCOMP_FLUID, false, MIN_TEMP, Emag, EoS_DensEint2Temp_CPUPtr, 
+//                                                     EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table );
+// #              endif
+
                Pres = (real) Hydro_Con2Pres( fluid_Bondi[0], fluid_Bondi[1], fluid_Bondi[2], fluid_Bondi[3], fluid_Bondi[4], 
                                              fluid_Bondi+NCOMP_FLUID, true, MIN_PRES, Emag, EoS_DensEint2Pres_CPUPtr, 
                                              EoS_AuxArray_Flt, EoS_AuxArray_Int, h_EoS_Table, NULL );
@@ -622,9 +639,9 @@ void Flu_ResetByUser_API_ClusterMerger( const int lv, const int FluSg, const int
 //       decide the jet direction by angular momentum
          double ang_mom_norm = sqrt(SQR(ang_mom_sum[0])+SQR(ang_mom_sum[1])+SQR(ang_mom_sum[2]));
          // for (int d=0; d<3; d++)  Jet_Vec[c][d] = ang_mom_sum[d]/ang_mom_norm;
-         Jet_Vec[c][0] = 1.0;   //cos(theta);   //sin(theta)*cos(phi);
+         Jet_Vec[c][0] = 0.0;   //cos(theta);   //sin(theta)*cos(phi);
          Jet_Vec[c][1] = 0.0;   //sin(theta)*cos(phi);   //sin(theta)*sin(phi);
-         Jet_Vec[c][2] = 0.0;   //sin(theta)*sin(phi);   //cos(theta);
+         Jet_Vec[c][2] = 1.0;   //sin(theta)*sin(phi);   //cos(theta);
       }
 
       if (V_cyl_exacthalf_sum[c] != 0)   normalize_const[c] = V_cyl_exacthalf_sum[c]/normalize_sum[c];
@@ -855,6 +872,7 @@ double MHD_ResetByUser_BField_ClusterMerger( const double x, const double y, con
    const double dy   = y - amr->BoxCenter[1];
    const double dz   = z - amr->BoxCenter[2];
    const double r    = sqrt( SQR(dx) + SQR(dy) );
+   // const double zdir = (dz > 0) - (dz < 0);
    double B_out;
 
    /*
@@ -892,7 +910,7 @@ double MHD_ResetByUser_BField_ClusterMerger( const double x, const double y, con
             default  :  Aux_Error( ERROR_INFO, "unsupported component (%c) !!\n", Component );
          }
       }
-      else if (JetBModel == 1)
+      else if (JetBModel == 1) // models below are deprecated!!!
       {
          B0 = sqrt(EB/((r0/2) * POW(JetBModel1_AFactor*r0, 2) * (0.25-log(JetBModel1_AFactor))));
          if (r > (JetBModel1_AFactor*r0))

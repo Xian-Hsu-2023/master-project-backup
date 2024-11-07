@@ -34,6 +34,9 @@ bool Flag_ClusterMerger( const int i, const int j, const int k, const int lv, co
    const double Pos[3] = { amr->patch[0][lv][PID]->EdgeL[0] + (i+0.5)*dh,
                            amr->patch[0][lv][PID]->EdgeL[1] + (j+0.5)*dh,
                            amr->patch[0][lv][PID]->EdgeL[2] + (k+0.5)*dh  };
+   const double dx   = Pos[0] - amr->BoxCenter[0];
+   const double dy   = Pos[1] - amr->BoxCenter[1];
+   const double dz   = Pos[2] - amr->BoxCenter[2];
 
    bool Flag = false;
 
@@ -47,11 +50,16 @@ bool Flag_ClusterMerger( const int i, const int j, const int k, const int lv, co
    for (int c=0; c<Merger_Coll_NumHalos; c++)
    {
       double R_SQR = SQR(Pos[0]-ClusterCen[c][0])+SQR(Pos[1]-ClusterCen[c][1])+SQR(Pos[2]-ClusterCen[c][2]);
-      if (  R_SQR <= SQR(R_acc)  &&  R_acc/dh <= Threshold[0]  ){ 
+      if (  R_SQR <= SQR(25*R_acc)  &&  R_acc/dh <= Threshold[0]  ){ 
          Flag = true;
          return Flag;
       }
    }
+
+   // if (  (SQR(dx)+SQR(dy)+SQR(dz)) <= SQR(Threshold[1])  ){ 
+   //    Flag = true;
+   //    return Flag;
+   // }
 
    if ( FirstTime ){  
       const double dh_max = amr->dh[MAX_LEVEL];
